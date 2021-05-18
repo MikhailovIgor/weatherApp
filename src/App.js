@@ -14,6 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import csc from 'country-state-city';
 import Icon from 'react-native-vector-icons/AntDesign';
 
 const DEVICE_WIDTH = Dimensions.get('window').width;
@@ -21,25 +22,23 @@ const DEVICE_HEIGHT = Dimensions.get('window').height;
 const WEATHER_KEY = 'cdd1f36de739293fbc91df9a445b4f5c';
 
 export default class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      currentLat: '',
-      currentLon: '',
-      data: [],
-      isLoading: true,
-      temp: '',
-      cityFromInput: '',
-      icon: '',
-      cityName: '',
-      desc: '',
-      main: '',
-      humidity: '',
-      pressure: '',
-      wind: '',
-    };
-    this.fetch_weather;
-  }
+  state = {
+    currentLat: '',
+    currentLon: '',
+    data: [],
+    isoCountry: '',
+    listOfCities: [],
+    isLoading: true,
+    temp: '',
+    cityFromInput: '',
+    icon: '',
+    cityName: '',
+    desc: '',
+    main: '',
+    humidity: '',
+    pressure: '',
+    wind: '',
+  };
 
   componentDidMount() {
     Geolocation.getCurrentPosition(({coords}) => {
@@ -57,6 +56,7 @@ export default class App extends React.Component {
           this.setState({data: json});
           this.setState({temp: (json.main.temp - 273.15).toFixed(1) + ' °C'});
           this.setState({cityName: json.name});
+          this.setState({isoCountry: json.sys.country});
           this.setState({icon: json.weather[0].icon});
           this.setState({desc: json.weather[0].description});
           this.setState({main: json.weather[0].main});
@@ -68,14 +68,18 @@ export default class App extends React.Component {
             wind: (json.wind.speed * 3.6).toFixed(1) + ' Km/h',
           });
         })
-        .catch(error => console.error(error))
+        .then(() => {
+          const listOfCities = csc.getCitiesOfCountry(this.state.isoCountry);
+          this.setState({listOfCities});
+        })
+        .catch(err => console.log('error from mounting: ', err))
         .finally(() => {
           this.setState({isLoading: false});
         });
     });
   }
 
-  fetch_weather = () => {
+  fetchWeather = () => {
     Keyboard.dismiss();
     fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${this.state.cityFromInput}&appid=${WEATHER_KEY}`,
@@ -84,7 +88,8 @@ export default class App extends React.Component {
       .then(json => {
         console.log(json);
         this.setState({data: json});
-        this.setState({temp: (json.main.temp - 273.15).toFixed(2) + ' °C'});
+        this.setState({temp: (json.main.temp - 273.15).toFixed(1) + ' °C'});
+        this.setState({isoCountry: json.sys.country});
         this.setState({cityName: json.name});
         this.setState({icon: json.weather[0].icon});
         this.setState({desc: json.weather[0].description});
@@ -97,7 +102,7 @@ export default class App extends React.Component {
           wind: (json.wind.speed * 3.6).toFixed(1) + ' Km/h',
         });
       })
-      .catch(error => console.error(error))
+      .catch(err => console.log('error from fetchWeather: ', err.message))
       .finally(() => {
         this.setState({isLoading: false});
       });
@@ -119,7 +124,7 @@ export default class App extends React.Component {
             />
             <TouchableOpacity
               style={styles.iconSearchStyle}
-              onPress={this.fetch_weather}>
+              onPress={this.fetchWeather}>
               <Icon name="search1" size={30} color="#FFF" />
             </TouchableOpacity>
           </View>

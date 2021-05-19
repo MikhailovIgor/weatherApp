@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,12 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  ActivityIndicator,
   FlatList,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/AntDesign';
+import csc from 'country-state-city';
 
 const DEVICE_WIDTH = Dimensions.get('window').width;
 const DEVICE_HEIGHT = Dimensions.get('window').height;
@@ -28,6 +30,8 @@ const App = () => {
   const [cityFromInput, setCityFromInput] = useState('');
   const [data, setData] = useState([]);
   const [cityName, setCityName] = useState('');
+  const [isoCountry, setIsoCountry] = useState('');
+  const [listOfCities, setListOfCities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [icon, setIcon] = useState('');
   const [temperature, setTemperature] = useState('');
@@ -37,15 +41,16 @@ const App = () => {
   const [pressure, setPressure] = useState('');
   const [wind, setWind] = useState('');
 
-  const getCurrentLocation = async () => {
-    await Geolocation.getCurrentPosition(initialData => {
+  const inputRef = useRef();
+  const clearInput = () => inputRef.current.clear();
+
+  const getCurrentLocation = () => {
+    Geolocation.getCurrentPosition(initialData => {
       setCoords({
         currentLatitude: initialData.coords.latitude,
         currentLongitude: initialData.coords.longitude,
       });
     });
-
-    console.log(coords);
   };
 
   const fetchWeatherOfCurrentLocation = async () => {
@@ -56,6 +61,7 @@ const App = () => {
       .then(data => {
         setData(data);
         setCityName(data.name);
+        setIsoCountry(data.sys.country);
         setIcon(data.weather[0].icon);
         setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
         setMain(data.weather[0].main);
@@ -64,82 +70,82 @@ const App = () => {
         setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
         setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
 
-        console.log(data);
+        console.log('data of current Location', data);
       })
       .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
       .finally(() => setIsLoading(false));
   };
 
+  useEffect(async () => {
+    if (coords.currentLatitude && coords.currentLongitude) {
+      await fetchWeatherOfCurrentLocation(
+        coords.currentLatitude,
+        coords.currentLongitude,
+      );
+    }
+  }, [coords]);
+
   useEffect(() => {
     setIsLoading(true);
     getCurrentLocation();
-    // fetchWeatherOfCurrentLocation();
-    setIsLoading(false);
   }, []);
 
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   Geolocation.getCurrentPosition(initialData => {
-  //     console.log('initialData from first part of useEffect: ', initialData);
-  //     setCoords({
-  //       currentLatitude: initialData.coords.latitude,
-  //       currentLongitude: initialData.coords.longitude,
-  //     });
-  //   });
-  //   console.log('coords from second part of useEffect: ', coords);
-  //   fetch(
-  //     `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
-  //   )
-  //     .then(resp => resp.json())
-  //     .then(data => {
-  //       setData(data);
-  //       setCityName(data.name);
-  //       setIcon(data.weather[0].icon);
-  //       setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
-  //       setMain(data.weather[0].main);
-  //       setDescription(data.weather[0].description);
-  //       setHumidity(data.main.humidity + ' %');
-  //       setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
-  //       setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
+  useEffect(() => {
+    if (isoCountry) {
+      getListOfCities(isoCountry);
+    }
+  }, [isoCountry]);
 
-  //       console.log(data);
-  //     })
-  //     .catch(err => console.log('error from fetchWeather: ', err))
-  //     .finally(() => setIsLoading(false));
-  // }, [coords, cityName]);
+  useEffect(() => {
+    if (listOfCities.length) {
+      console.log('listOfCities from useEffect', listOfCities);
+    }
+  }, [listOfCities]);
 
-  const fetchWeather = () => {
+  const getListOfCities = iso => {
+    let cities = [];
+    const arrOfCities = csc.getCitiesOfCountry(iso);
+    arrOfCities.map(city => cities.push(city.name));
+
+    setListOfCities(cities);
+  };
+
+  const fetchWeather = async () => {
     Keyboard.dismiss();
     setIsLoading(true);
-    fetch(
+    clearInput();
+    await fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${cityFromInput}&appid=${WEATHER_KEY}`,
     )
       .then(response => response.json())
       .then(data => {
         setData(data);
         setCityName(data.name);
+        setIsoCountry(data.sys.country);
         setIcon(data.weather[0].icon);
         setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
         setMain(data.weather[0].main);
         setDescription(data.weather[0].description);
         setHumidity(data.main.humidity + ' %');
-        setPressure((data.main.pressure * 0.0075).toFixed(0) + ' mmHg');
+        setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
         setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
 
-        console.log(data);
+        console.log('data of entered City: ', data);
       })
       .catch(err => console.log('error from fetchWeather: ', err))
       .finally(() => setIsLoading(false));
   };
 
-  const enterCityName = value => {
-    setCityFromInput(value);
-    console.log(cityFromInput);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar translucent={true} backgroundColor="#000" />
+      {isLoading && (
+        <ActivityIndicator
+          size={150}
+          color="#ff5500"
+          style={styles.spinnerStyle}
+        />
+      )}
       <ImageBackground
         source={require('./assets/images/background.jpeg')}
         style={styles.imageBackgroundStyle}>
@@ -147,8 +153,10 @@ const App = () => {
           <TextInput
             placeholder="Enter city name..."
             placeholderTextColor="#FFF"
+            autoCapitalize="words"
             style={styles.inputStyle}
-            onChangeText={enterCityName}
+            ref={inputRef}
+            onChangeText={text => setCityFromInput(text)}
           />
           <TouchableOpacity
             style={styles.iconSearchStyle}
@@ -175,8 +183,8 @@ const App = () => {
             <Text style={styles.weatherDescriptionMainText}>{main}</Text>
             <Text style={styles.weatherDescriptionText}>{description}</Text>
             <Text style={styles.humidityInfoStyle}>Humidity : {humidity}</Text>
-            <Text style={styles.other_text}>Pressure : {pressure}</Text>
-            <Text style={styles.other_text}>Wind : {wind}</Text>
+            <Text style={styles.otherInfoStyle}>Pressure : {pressure}</Text>
+            <Text style={styles.otherInfoStyle}>Wind : {wind}</Text>
           </View>
         </View>
       </ImageBackground>
@@ -192,6 +200,11 @@ const styles = StyleSheet.create({
   imageBackgroundStyle: {
     height: '100%',
     width: '100%',
+  },
+  spinnerStyle: {
+    height: DEVICE_HEIGHT,
+    width: DEVICE_WIDTH,
+    backgroundColor: 'transparent',
   },
   inputContainer: {
     height: '20%',

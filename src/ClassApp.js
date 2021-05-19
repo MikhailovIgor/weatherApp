@@ -12,6 +12,7 @@ import {
   TextInput,
   Keyboard,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import csc from 'country-state-city';
@@ -53,24 +54,23 @@ export default class App extends React.Component {
         .then(response => response.json())
         .then(json => {
           console.log(json);
-          this.setState({data: json});
-          this.setState({temp: (json.main.temp - 273.15).toFixed(1) + ' °C'});
-          this.setState({cityName: json.name});
-          this.setState({isoCountry: json.sys.country});
-          this.setState({icon: json.weather[0].icon});
-          this.setState({desc: json.weather[0].description});
-          this.setState({main: json.weather[0].main});
-          this.setState({humidity: json.main.humidity + ' %'});
           this.setState({
+            data: json,
+            temp: (json.main.temp - 273.15).toFixed(1) + ' °C',
+            cityName: json.name,
+            isoCountry: json.sys.country,
+            icon: json.weather[0].icon,
+            desc: json.weather[0].description,
+            main: json.weather[0].main,
+            humidity: json.main.humidity + ' %',
             pressure: (json.main.pressure * 0.75).toFixed(0) + ' mmHg',
-          });
-          this.setState({
             wind: (json.wind.speed * 3.6).toFixed(1) + ' Km/h',
           });
         })
         .then(() => {
           const listOfCities = csc.getCitiesOfCountry(this.state.isoCountry);
           this.setState({listOfCities});
+          console.log(listOfCities);
         })
         .catch(err => console.log('error from mounting: ', err))
         .finally(() => {
@@ -80,6 +80,7 @@ export default class App extends React.Component {
   }
 
   fetchWeather = () => {
+    this.setState({isLoading: true});
     Keyboard.dismiss();
     fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${this.state.cityFromInput}&appid=${WEATHER_KEY}`,
@@ -112,6 +113,13 @@ export default class App extends React.Component {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar translucent={true} backgroundColor="#000" />
+        {this.state.isLoading && (
+          <ActivityIndicator
+            size={150}
+            color="#ff5500"
+            style={styles.spinnerStyle}
+          />
+        )}
         <ImageBackground
           source={require('./assets/images/background.jpeg')}
           style={styles.imageBackgroundStyle}>
@@ -173,6 +181,11 @@ const styles = StyleSheet.create({
   container: {
     height: DEVICE_HEIGHT,
     width: DEVICE_WIDTH,
+  },
+  spinnerStyle: {
+    height: DEVICE_HEIGHT,
+    width: DEVICE_WIDTH,
+    backgroundColor: 'transparent',
   },
   imageBackgroundStyle: {
     height: '100%',

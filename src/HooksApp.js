@@ -53,35 +53,55 @@ const App = () => {
     });
   };
 
-  const fetchWeatherOfCurrentLocation = async () => {
-    await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
-    )
-      .then(resp => resp.json())
-      .then(data => {
-        setData(data);
-        setCityName(data.name);
-        setIsoCountry(data.sys.country);
-        setIcon(data.weather[0].icon);
-        setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
-        setMain(data.weather[0].main);
-        setDescription(data.weather[0].description);
-        setHumidity(data.main.humidity + ' %');
-        setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
-        setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
+  // const fetchWeatherOfCurrentLocation = async () => {
+  //   await fetch(
+  //     `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
+  //   )
+  //     .then(resp => resp.json())
+  //     .then(data => {
+  //       setData(data);
+  //       setCityName(data.name);
+  //       setIsoCountry(data.sys.country);
+  //       setIcon(data.weather[0].icon);
+  //       setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
+  //       setMain(data.weather[0].main);
+  //       setDescription(data.weather[0].description);
+  //       setHumidity(data.main.humidity + ' %');
+  //       setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
+  //       setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
 
-        console.log('data of current Location', data);
-      })
-      .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
-      .finally(() => setIsLoading(false));
-  };
+  //       console.log('data of current Location', data);
+  //     })
+  //     .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
+  //     .finally(() => setIsLoading(false));
+  // };
 
-  useEffect(async () => {
+  useEffect(() => {
     if (coords.currentLatitude && coords.currentLongitude) {
-      await fetchWeatherOfCurrentLocation(
-        coords.currentLatitude,
-        coords.currentLongitude,
-      );
+      const fetchWeatherOfCurrentLocation = async () => {
+        await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
+        )
+          .then(resp => resp.json())
+          .then(data => {
+            setData(data);
+            setCityName(data.name);
+            setIsoCountry(data.sys.country);
+            setIcon(data.weather[0].icon);
+            setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
+            setMain(data.weather[0].main);
+            setDescription(data.weather[0].description);
+            setHumidity(data.main.humidity + ' %');
+            setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
+            setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
+
+            console.log('data of current Location', data);
+          })
+          .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
+          .finally(() => setIsLoading(false));
+      };
+
+      fetchWeatherOfCurrentLocation();
     }
   }, [coords]);
 

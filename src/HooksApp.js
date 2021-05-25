@@ -161,6 +161,7 @@ const App = () => {
             <FlatList
               data={listOfCities.filter(item => item.name.includes(inputValue))}
               keyExtractor={item => item.longitude}
+              keyboardShouldPersistTaps="always"
               ItemSeparatorComponent={() => (
                 <View style={styles.itemSeparatorStyle} />
               )}

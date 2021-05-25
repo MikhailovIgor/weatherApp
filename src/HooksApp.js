@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native';
+import {Input} from 'react-native-elements';
 import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/AntDesign';
 import csc from 'country-state-city';
@@ -27,19 +28,20 @@ const App = () => {
     currentLatitude: '',
     currentLongitude: '',
   });
-  const [cityFromInput, setCityFromInput] = useState('');
-  const [data, setData] = useState([]);
-  const [cityName, setCityName] = useState('');
-  const [isoCountry, setIsoCountry] = useState('');
+  const [data, setData] = useState({
+    city: '',
+    isoCountry: '',
+    icon: '',
+    temperature: '',
+    mainInfo: '',
+    description: '',
+    humidity: '',
+    pressure: '',
+    wind: '',
+  });
+  const [inputValue, setInputValue] = useState('');
   const [listOfCities, setListOfCities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [icon, setIcon] = useState('');
-  const [temperature, setTemperature] = useState('');
-  const [main, setMain] = useState('');
-  const [description, setDescription] = useState('');
-  const [humidity, setHumidity] = useState('');
-  const [pressure, setPressure] = useState('');
-  const [wind, setWind] = useState('');
 
   const inputRef = useRef();
   const clearInput = () => inputRef.current.clear();
@@ -53,48 +55,25 @@ const App = () => {
     });
   };
 
-  // const fetchWeatherOfCurrentLocation = async () => {
-  //   await fetch(
-  //     `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
-  //   )
-  //     .then(resp => resp.json())
-  //     .then(data => {
-  //       setData(data);
-  //       setCityName(data.name);
-  //       setIsoCountry(data.sys.country);
-  //       setIcon(data.weather[0].icon);
-  //       setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
-  //       setMain(data.weather[0].main);
-  //       setDescription(data.weather[0].description);
-  //       setHumidity(data.main.humidity + ' %');
-  //       setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
-  //       setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
-
-  //       console.log('data of current Location', data);
-  //     })
-  //     .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
-  //     .finally(() => setIsLoading(false));
-  // };
-
   useEffect(() => {
     if (coords.currentLatitude && coords.currentLongitude) {
-      const fetchWeatherOfCurrentLocation = async () => {
-        await fetch(
+      const fetchWeatherOfCurrentLocation = () => {
+        fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
         )
           .then(resp => resp.json())
           .then(data => {
-            setData(data);
-            setCityName(data.name);
-            setIsoCountry(data.sys.country);
-            setIcon(data.weather[0].icon);
-            setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
-            setMain(data.weather[0].main);
-            setDescription(data.weather[0].description);
-            setHumidity(data.main.humidity + ' %');
-            setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
-            setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
-
+            setData({
+              city: data.name,
+              isoCountry: data.sys.country,
+              icon: data.weather[0].icon,
+              temperature: `${(data.main.temp - 273.15).toFixed(1)} °C`,
+              mainInfo: data.weather[0].main,
+              description: data.weather[0].description,
+              humidity: `${data.main.humidity} %`,
+              pressure: `${(data.main.pressure * 0.75).toFixed(0)} mmHg`,
+              wind: `${(data.wind.speed * 3.6).toFixed(1)} km/h`,
+            });
             console.log('data of current Location', data);
           })
           .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
@@ -108,53 +87,47 @@ const App = () => {
   useEffect(() => {
     setIsLoading(true);
     getCurrentLocation();
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    if (isoCountry) {
-      getListOfCities(isoCountry);
+    if (data.isoCountry) {
+      const arrOfCitiesOfCountry = csc.getCitiesOfCountry(data.isoCountry);
+      setListOfCities(arrOfCitiesOfCountry);
     }
-  }, [isoCountry]);
+  }, [data.isoCountry]);
 
-  useEffect(() => {
-    if (listOfCities.length) {
-      console.log('listOfCities from useEffect', listOfCities);
-    }
-  }, [listOfCities]);
-
-  const getListOfCities = iso => {
-    let cities = [];
-    const arrOfCities = csc.getCitiesOfCountry(iso);
-    arrOfCities.map(city => cities.push(city.name));
-
-    setListOfCities(cities);
-  };
-
-  const fetchWeather = async () => {
+  const fetchWeather = city => {
     Keyboard.dismiss();
     setIsLoading(true);
-    clearInput();
-    await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${cityFromInput}&appid=${WEATHER_KEY}`,
+    setInputValue('');
+    fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${WEATHER_KEY}`,
     )
       .then(response => response.json())
       .then(data => {
-        setData(data);
-        setCityName(data.name);
-        setIsoCountry(data.sys.country);
-        setIcon(data.weather[0].icon);
-        setTemperature((data.main.temp - 273.15).toFixed(1) + ' °C');
-        setMain(data.weather[0].main);
-        setDescription(data.weather[0].description);
-        setHumidity(data.main.humidity + ' %');
-        setPressure((data.main.pressure * 0.75).toFixed(0) + ' mmHg');
-        setWind((data.wind.speed * 3.6).toFixed(1) + ' km/h');
-
+        setData({
+          city: data.name,
+          isoCountry: data.sys.country,
+          icon: data.weather[0].icon,
+          temperature: `${(data.main.temp - 273.15).toFixed(1)} °C`,
+          mainInfo: data.weather[0].main,
+          description: data.weather[0].description,
+          humidity: `${data.main.humidity} %`,
+          pressure: `${(data.main.pressure * 0.75).toFixed(0)} mmHg`,
+          wind: `${(data.wind.speed * 3.6).toFixed(1)} km/h`,
+        });
         console.log('data of entered City: ', data);
       })
       .catch(err => console.log('error from fetchWeather: ', err))
       .finally(() => setIsLoading(false));
   };
+
+  const ItemView = ({item}) => (
+    <TouchableOpacity onPress={() => fetchWeather(item.name)}>
+      <Text style={styles.itemStyle}>{item.name}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -169,42 +142,65 @@ const App = () => {
       <ImageBackground
         source={require('./assets/images/background.jpeg')}
         style={styles.imageBackgroundStyle}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Enter city name..."
-            placeholderTextColor="#FFF"
-            autoCapitalize="words"
-            style={styles.inputStyle}
+        <View style={styles.inputBox}>
+          <Input
             ref={inputRef}
-            onChangeText={text => setCityFromInput(text)}
+            inputContainerStyle={styles.inputContainerStyle}
+            style={{color: '#fff'}}
+            placeholderTextColor="#fff"
+            placeholder="Enter a city name..."
+            value={inputValue}
+            onChangeText={setInputValue}
+            rightIcon={
+              <TouchableOpacity onPress={() => fetchWeather(inputValue)}>
+                <Icon name="search1" size={28} color="#fff" />
+              </TouchableOpacity>
+            }
           />
-          <TouchableOpacity
-            style={styles.iconSearchStyle}
-            onPress={fetchWeather}>
-            <Icon name="search1" size={30} color="#FFF" />
-          </TouchableOpacity>
+          {inputValue.length ? (
+            <FlatList
+              data={listOfCities.filter(item => item.name.includes(inputValue))}
+              keyExtractor={item => item.longitude}
+              ItemSeparatorComponent={() => (
+                <View style={styles.itemSeparatorStyle} />
+              )}
+              renderItem={ItemView}
+              style={styles.flatListStyle}
+            />
+          ) : null}
         </View>
 
         <View style={styles.infoMainContainer}>
           <View style={styles.weatherMainInfo}>
             <Image
-              source={{uri: `http://openweathermap.org/img/wn/${icon}@2x.png`}}
+              source={{
+                uri: `http://openweathermap.org/img/wn/${data.icon}@2x.png`,
+              }}
               style={styles.weatherImage}
             />
             <View>
-              <Text style={styles.temperatureStyle}>{temperature}</Text>
-              <Text style={styles.cityNameStyle}>{cityName}</Text>
+              <Text style={styles.temperatureStyle}>{data.temperature}</Text>
+              <Text style={styles.cityNameStyle}>{data.city}</Text>
+              <Text style={styles.cityNameStyle}>{data.isoCountry}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.descriptionContainer}>
           <View style={styles.weatherDescription}>
-            <Text style={styles.weatherDescriptionMainText}>{main}</Text>
-            <Text style={styles.weatherDescriptionText}>{description}</Text>
-            <Text style={styles.humidityInfoStyle}>Humidity : {humidity}</Text>
-            <Text style={styles.otherInfoStyle}>Pressure : {pressure}</Text>
-            <Text style={styles.otherInfoStyle}>Wind : {wind}</Text>
+            <Text style={styles.weatherDescriptionMainText}>
+              {data.mainInfo}
+            </Text>
+            <Text style={styles.weatherDescriptionText}>
+              {data.description}
+            </Text>
+            <Text style={styles.humidityInfoStyle}>
+              Humidity : {data.humidity}
+            </Text>
+            <Text style={styles.otherInfoStyle}>
+              Pressure : {data.pressure}
+            </Text>
+            <Text style={styles.otherInfoStyle}>Wind : {data.wind}</Text>
           </View>
         </View>
       </ImageBackground>
@@ -226,38 +222,42 @@ const styles = StyleSheet.create({
     width: DEVICE_WIDTH,
     backgroundColor: 'transparent',
   },
-  inputContainer: {
-    height: '20%',
+  inputBox: {
+    height: '25%',
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
+    marginTop: '10%',
+    // alignItems: 'center',
+    // borderColor: 'red',
+    // borderWidth: 1,
   },
-  inputStyle: {
-    height: '35%',
-    width: '77%',
-    borderColor: '#FFF',
+  inputContainerStyle: {
+    borderColor: '#fff',
     borderWidth: 1,
     borderRadius: 15,
-    color: '#FFF',
     paddingHorizontal: 15,
   },
-  iconSearchStyle: {
-    marginLeft: '5%',
-    height: '35%',
-    width: '8%',
-    justifyContent: 'center',
-    alignItems: 'center',
+  flatListStyle: {
+    paddingHorizontal: 15,
+    marginTop: -24,
+    height: '65%',
+  },
+  itemSeparatorStyle: {
+    height: 0.5,
+    backgroundColor: '#c8c8c8',
+  },
+  itemStyle: {
+    padding: 15,
+    color: '#fff',
   },
   infoMainContainer: {
-    height: '30%',
+    height: '28%',
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   weatherMainInfo: {
-    height: '80%',
+    height: '86%',
     width: '90%',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 15,
@@ -274,13 +274,13 @@ const styles = StyleSheet.create({
     marginLeft: '5%',
   },
   cityNameStyle: {
-    fontSize: 20,
+    fontSize: 22,
     color: '#FFF',
     marginLeft: '5%',
     marginTop: '3%',
   },
   descriptionContainer: {
-    height: '45%',
+    height: '42%',
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',

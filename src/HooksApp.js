@@ -19,9 +19,10 @@ import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/AntDesign';
 import csc from 'country-state-city';
 
+import {weatherKey} from '../app.json';
+
 const DEVICE_WIDTH = Dimensions.get('window').width;
 const DEVICE_HEIGHT = Dimensions.get('window').height;
-const WEATHER_KEY = 'cdd1f36de739293fbc91df9a445b4f5c';
 
 const App = () => {
   const [coords, setCoords] = useState({
@@ -59,7 +60,7 @@ const App = () => {
     if (coords.currentLatitude && coords.currentLongitude) {
       const fetchWeatherOfCurrentLocation = () => {
         fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${WEATHER_KEY}`,
+          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${weatherKey}`,
         )
           .then(resp => resp.json())
           .then(data => {
@@ -102,7 +103,7 @@ const App = () => {
     setIsLoading(true);
     setInputValue('');
     fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${WEATHER_KEY}`,
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${weatherKey}`,
     )
       .then(response => response.json())
       .then(data => {

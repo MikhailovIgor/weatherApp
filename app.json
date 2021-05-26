@@ -1,4 +1,5 @@
 {
   "name": "weatherApp",
-  "displayName": "weatherApp"
+  "displayName": "weatherApp",
+  "weatherKey": "cdd1f36de739293fbc91df9a445b4f5c"
 }

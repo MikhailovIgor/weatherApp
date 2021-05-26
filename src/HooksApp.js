@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,13 @@ import {
   Image,
   ImageBackground,
   StatusBar,
-  TouchableOpacity,
-  TextInput,
   Keyboard,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
-import {Input} from 'react-native-elements';
 import Geolocation from '@react-native-community/geolocation';
-import Icon from 'react-native-vector-icons/AntDesign';
 import csc from 'country-state-city';
 
+import CustomSearchBar from './components/CustomSearchBar';
 import {weatherKey} from '../app.json';
 
 const DEVICE_WIDTH = Dimensions.get('window').width;
@@ -40,12 +36,8 @@ const App = () => {
     pressure: '',
     wind: '',
   });
-  const [inputValue, setInputValue] = useState('');
   const [listOfCities, setListOfCities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  const inputRef = useRef();
-  const clearInput = () => inputRef.current.clear();
 
   const getCurrentLocation = () => {
     Geolocation.getCurrentPosition(initialData => {
@@ -58,6 +50,7 @@ const App = () => {
 
   useEffect(() => {
     if (coords.currentLatitude && coords.currentLongitude) {
+      setIsLoading(true);
       const fetchWeatherOfCurrentLocation = () => {
         fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${weatherKey}`,
@@ -101,7 +94,6 @@ const App = () => {
   const fetchWeather = city => {
     Keyboard.dismiss();
     setIsLoading(true);
-    setInputValue('');
     fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${weatherKey}`,
     )
@@ -124,12 +116,6 @@ const App = () => {
       .finally(() => setIsLoading(false));
   };
 
-  const ItemView = ({item}) => (
-    <TouchableOpacity onPress={() => fetchWeather(item.name)}>
-      <Text style={styles.itemStyle}>{item.name}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar translucent={true} backgroundColor="#000" />
@@ -143,34 +129,10 @@ const App = () => {
       <ImageBackground
         source={require('./assets/images/background.jpeg')}
         style={styles.imageBackgroundStyle}>
-        <View style={styles.inputBox}>
-          <Input
-            ref={inputRef}
-            inputContainerStyle={styles.inputContainerStyle}
-            style={{color: '#fff'}}
-            placeholderTextColor="#fff"
-            placeholder="Enter a city name..."
-            value={inputValue}
-            onChangeText={setInputValue}
-            rightIcon={
-              <TouchableOpacity onPress={() => fetchWeather(inputValue)}>
-                <Icon name="search1" size={28} color="#fff" />
-              </TouchableOpacity>
-            }
-          />
-          {inputValue.length ? (
-            <FlatList
-              data={listOfCities.filter(item => item.name.includes(inputValue))}
-              keyExtractor={item => item.longitude}
-              keyboardShouldPersistTaps="always"
-              ItemSeparatorComponent={() => (
-                <View style={styles.itemSeparatorStyle} />
-              )}
-              renderItem={ItemView}
-              style={styles.flatListStyle}
-            />
-          ) : null}
-        </View>
+        <CustomSearchBar
+          listOfCities={listOfCities}
+          fetchWeather={fetchWeather}
+        />
 
         <View style={styles.infoMainContainer}>
           <View style={styles.weatherMainInfo}>
@@ -223,33 +185,6 @@ const styles = StyleSheet.create({
     height: DEVICE_HEIGHT,
     width: DEVICE_WIDTH,
     backgroundColor: 'transparent',
-  },
-  inputBox: {
-    height: '25%',
-    width: '100%',
-    marginTop: '10%',
-    // alignItems: 'center',
-    // borderColor: 'red',
-    // borderWidth: 1,
-  },
-  inputContainerStyle: {
-    borderColor: '#fff',
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-  },
-  flatListStyle: {
-    paddingHorizontal: 15,
-    marginTop: -24,
-    height: '65%',
-  },
-  itemSeparatorStyle: {
-    height: 0.5,
-    backgroundColor: '#c8c8c8',
-  },
-  itemStyle: {
-    padding: 15,
-    color: '#fff',
   },
   infoMainContainer: {
     height: '28%',

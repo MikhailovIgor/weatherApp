@@ -49,32 +49,33 @@ const App = () => {
   };
 
   useEffect(() => {
+    const fetchCurrentLocationWeather = async () => {
+      try {
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${weatherKey}`,
+        );
+        const curWeatherData = await response.json();
+        setData({
+          city: curWeatherData.name,
+          isoCountry: curWeatherData.sys.country,
+          icon: curWeatherData.weather[0].icon,
+          temperature: `${(curWeatherData.main.temp - 273.15).toFixed(1)} °C`,
+          mainInfo: curWeatherData.weather[0].main,
+          description: curWeatherData.weather[0].description,
+          humidity: `${curWeatherData.main.humidity} %`,
+          pressure: `${(curWeatherData.main.pressure * 0.75).toFixed(0)} mmHg`,
+          wind: `${(curWeatherData.wind.speed * 3.6).toFixed(1)} km/h`,
+        });
+        setIsLoading(false);
+      } catch (err) {
+        console.log(err);
+        setIsLoading(false);
+      }
+    };
+
     if (coords.currentLatitude && coords.currentLongitude) {
       setIsLoading(true);
-      const fetchWeatherOfCurrentLocation = () => {
-        fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${coords.currentLatitude}&lon=${coords.currentLongitude}&appid=${weatherKey}`,
-        )
-          .then(resp => resp.json())
-          .then(data => {
-            setData({
-              city: data.name,
-              isoCountry: data.sys.country,
-              icon: data.weather[0].icon,
-              temperature: `${(data.main.temp - 273.15).toFixed(1)} °C`,
-              mainInfo: data.weather[0].main,
-              description: data.weather[0].description,
-              humidity: `${data.main.humidity} %`,
-              pressure: `${(data.main.pressure * 0.75).toFixed(0)} mmHg`,
-              wind: `${(data.wind.speed * 3.6).toFixed(1)} km/h`,
-            });
-            console.log('data of current Location', data);
-          })
-          .catch(err => console.log('error from fetchWeatherOfCurrLoc: ', err))
-          .finally(() => setIsLoading(false));
-      };
-
-      fetchWeatherOfCurrentLocation();
+      fetchCurrentLocationWeather();
     }
   }, [coords]);
 
@@ -91,29 +92,33 @@ const App = () => {
     }
   }, [data.isoCountry]);
 
-  const fetchWeather = city => {
+  const fetchWeather = async city => {
     Keyboard.dismiss();
     setIsLoading(true);
-    fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${weatherKey}`,
-    )
-      .then(response => response.json())
-      .then(data => {
-        setData({
-          city: data.name,
-          isoCountry: data.sys.country,
-          icon: data.weather[0].icon,
-          temperature: `${(data.main.temp - 273.15).toFixed(1)} °C`,
-          mainInfo: data.weather[0].main,
-          description: data.weather[0].description,
-          humidity: `${data.main.humidity} %`,
-          pressure: `${(data.main.pressure * 0.75).toFixed(0)} mmHg`,
-          wind: `${(data.wind.speed * 3.6).toFixed(1)} km/h`,
-        });
-        console.log('data of entered City: ', data);
-      })
-      .catch(err => console.log('error from fetchWeather: ', err))
-      .finally(() => setIsLoading(false));
+
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${weatherKey}`,
+      );
+      const enteredCityWeather = await response.json();
+      setData({
+        city: enteredCityWeather.name,
+        isoCountry: enteredCityWeather.sys.country,
+        icon: enteredCityWeather.weather[0].icon,
+        temperature: `${(enteredCityWeather.main.temp - 273.15).toFixed(1)} °C`,
+        mainInfo: enteredCityWeather.weather[0].main,
+        description: enteredCityWeather.weather[0].description,
+        humidity: `${enteredCityWeather.main.humidity} %`,
+        pressure: `${(enteredCityWeather.main.pressure * 0.75).toFixed(
+          0,
+        )} mmHg`,
+        wind: `${(enteredCityWeather.wind.speed * 3.6).toFixed(1)} km/h`,
+      });
+      setIsLoading(false);
+    } catch (err) {
+      console.log(err);
+      setIsLoading(false);
+    }
   };
 
   return (
